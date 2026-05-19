@@ -1,4 +1,4 @@
-package com.engineeringdigest.http_request_demo;
+package com.engineeringdigest.http_request_demo.dto;
 
 
 import io.swagger.v3.oas.annotations.media.Schema;

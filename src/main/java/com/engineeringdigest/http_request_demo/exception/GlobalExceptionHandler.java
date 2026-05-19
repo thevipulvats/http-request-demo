@@ -1,10 +1,9 @@
-package com.engineeringdigest.http_request_demo;
+package com.engineeringdigest.http_request_demo.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

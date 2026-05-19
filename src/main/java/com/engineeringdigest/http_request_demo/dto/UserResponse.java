@@ -1,4 +1,4 @@
-package com.engineeringdigest.http_request_demo;
+package com.engineeringdigest.http_request_demo.dto;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package com.engineeringdigest.http_request_demo;
+package com.engineeringdigest.http_request_demo.configuration;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
