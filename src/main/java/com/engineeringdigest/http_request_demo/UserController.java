@@ -1,5 +1,7 @@
 package com.engineeringdigest.http_request_demo;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/users")
+@Tag(name = "USER APIs", description = "Endpoints for managing users")
 public class UserController {
 
     private final Map<Integer, User> userStorage = new HashMap<>();
@@ -24,12 +27,13 @@ public class UserController {
     private UserMapper userMapper;
 
     @GetMapping
-    public List<User> getUsers(@RequestHeader String a){
-        System.out.println(a);
+    @Operation(summary = "Get all users", description = "Returns a list of all users in the system")
+    public List<User> getUsers(){
         return new ArrayList<>(userStorage.values());
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID", description = "Returns a single user for the given ID. Throws 404 if not found.")
     public ResponseEntity<User> getUser(@PathVariable(name = "id") int userId){
         if(!userStorage.keySet().contains(userId)){
             throw new ResourceNotFoundException(
@@ -39,6 +43,7 @@ public class UserController {
     }
 
     @PostMapping
+    @Operation(summary = "Create a new user", description = "Accepts name and age, validates them, and creates a new user")
     private UserResponse createUser(@RequestBody @Valid UserRequest userRequest){ // jackson
         User user = userMapper.toUser(userRequest);
         int id = this.id.getAndIncrement();
@@ -49,6 +54,7 @@ public class UserController {
     }
 
     @PutMapping
+    @Operation(summary = "Replace a user", description = "Completely replaces user data for the given ID")
     public User replaceUser(@RequestParam int id, @RequestBody User user){
         user.setId(id);
         userStorage.put(id, user);
@@ -56,6 +62,7 @@ public class UserController {
     }
 
     @PatchMapping
+    @Operation(summary = "Partially update a user", description = "Updates only the provided fields for the given user ID")
     public User updateUser(@RequestParam int id, @RequestBody User user){
         if(user.getAge() > 0){
             userStorage.get(id).setAge(user.getAge());
@@ -67,6 +74,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a user", description = "Deletes the user with the given ID")
     public ResponseEntity<Void> deleteUser(@PathVariable int id){
         User user = userStorage.remove(id);
         return ResponseEntity.noContent().build();
