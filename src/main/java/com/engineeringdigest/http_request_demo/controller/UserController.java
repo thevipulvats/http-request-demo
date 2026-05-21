@@ -40,7 +40,7 @@ public class UserController {
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID", description = "Returns a single user for the given ID. Throws 404 if not found.")
     public ResponseEntity<User> getUser(@PathVariable(name = "id") int userId) {
-        User user = userRepository.findById(userId);
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             throw new ResourceNotFoundException(
                     "User with id " + userId + " not found");
@@ -52,7 +52,7 @@ public class UserController {
     @Operation(summary = "Create a new user", description = "Accepts name and age, validates them, and creates a new user")
     private UserResponse createUser(@RequestBody @Valid UserRequest userRequest) { // jackson
         User user = userMapper.toUser(userRequest);
-        return userMapper.toUserResponse(userRepository.saveUser(user));
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     @PutMapping
@@ -60,14 +60,18 @@ public class UserController {
     public User replaceUser(@RequestParam int id, @RequestBody @Valid UserRequest userRequest) {
         User user = userMapper.toUser(userRequest);
         user.setId(id);
-        userRepository.update(user);
+        userRepository.save(user);
         return user;
     }
 
     @PatchMapping
     @Operation(summary = "Partially update a user", description = "Updates only the provided fields for the given user ID")
     public User updateUser(@RequestParam int id, @RequestBody @Valid UserPatchRequest userRequest) {
-        User existingUser = userRepository.findById(id);
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser == null) {
+            throw new ResourceNotFoundException(
+                    "User with id " + id + " not found");
+        }
         User newUser = userMapper.toUser(userRequest);
         if (newUser.getAge() > 0) {
             existingUser.setAge(newUser.getAge());
@@ -75,15 +79,22 @@ public class UserController {
         if (newUser.getName() != null && !newUser.getName().isBlank()) {
             existingUser.setName(newUser.getName());
         }
-        userRepository.update(existingUser);
+        userRepository.save(existingUser);
         return existingUser;
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a user", description = "Deletes the user with the given ID")
     public ResponseEntity<Void> deleteUser(@PathVariable int id) {
-        userRepository.delete(id);
+        userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search users by name",
+            description = "Returns users whose name contains the search term")
+    public List<User> searchUsers(@RequestParam String name){
+        return userRepository.findByNameContainingIgnoreCase(name);
     }
 
 
