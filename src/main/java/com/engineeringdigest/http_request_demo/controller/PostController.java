@@ -5,6 +5,8 @@ import com.engineeringdigest.http_request_demo.model.Post;
 import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.PostRepository;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
+import com.engineeringdigest.http_request_demo.service.PostService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,31 +14,21 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 public class PostController {
 
-    @Autowired
-    private PostRepository postRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final PostService postService;
 
     @PostMapping
     public Post createPost(@RequestParam int userId,
                            @RequestParam String title,
-                           @RequestParam String content){
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Post post = new Post();
-        post.setTitle(title);
-        post.setContent(content);
-        post.setUser(user);
-        return postRepository.save(post);
+                           @RequestParam String content) {
+        return postService.createPost(userId, title, content);
     }
 
     @GetMapping("/user/{userId}")
     public List<Post> getPostsByUser(@PathVariable int userId) {
-        return postRepository.findByUserId(userId);
+        return postService.getPostsByUser(userId);
     }
 
 }
