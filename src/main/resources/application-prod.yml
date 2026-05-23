@@ -1,0 +1,19 @@
+springdoc:
+  api-docs:
+    path: /api-spec
+  swagger-ui:
+    path: /api-docs-ui
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    url: jdbc:mysql://localhost:3306/bootcamp
+    password: ''
+  application:
+    name: http-request-demo
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+    show-sql: false
