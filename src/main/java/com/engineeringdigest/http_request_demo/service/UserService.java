@@ -10,6 +10,10 @@ import com.engineeringdigest.http_request_demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +27,8 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    private final PasswordEncoder passwordEncoder;
+
     public List<User> getAllUsers() {
         log.info("Fetching all users");
         List<User> users = userRepository.findAll();
@@ -31,6 +37,12 @@ public class UserService {
     }
 
     public User getUserById(int userId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User loggedInUser = (User) authentication.getPrincipal();
+        if (loggedInUser.getId() != userId && !loggedInUser.getRole().equals("ADMIN")) {
+            log.warn("User {} tried to access data of user {}", loggedInUser.getId(), userId);
+            throw new AccessDeniedException("You can only access your own data");
+        }
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             log.warn("User not found with id: {}", userId);
@@ -44,6 +56,8 @@ public class UserService {
     public UserResponse createUser(UserRequest userRequest) {
         log.info("Creating new user with name: {}", userRequest.getName());
         User user = userMapper.toUser(userRequest);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole("USER");
         UserResponse response = userMapper.toUserResponse(userRepository.save(user));
         log.info("User created successfully with id: {}", response.getId());
         return response;

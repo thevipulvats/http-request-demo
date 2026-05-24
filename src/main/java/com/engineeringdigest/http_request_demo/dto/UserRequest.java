@@ -22,5 +22,10 @@ public class UserRequest {
     @Schema(description = "Age of the user", example = "25")
     private int age;
 
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Schema(description = "Password for the user", example = "password123")
+    private String password;
+
 
 }
