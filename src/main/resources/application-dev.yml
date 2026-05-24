@@ -20,4 +20,5 @@ spring:
 
 jwt:
   secret: mySecretKeyForJWTTokenGenerationWhichIsLongEnough123456
-  expiration: 3600000
+  expiration: 30000
+  refresh-expiration: 604800000
