@@ -5,6 +5,7 @@ import com.engineeringdigest.http_request_demo.model.Post;
 import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.PostRepository;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
+import com.engineeringdigest.http_request_demo.security.AccessControl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,10 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final AccessControl accessControl;
 
     public Post createPost(int userId, String title, String content) {
+        accessControl.allowSameUserOrAdmin(userId);
         log.info("Creating post for userId: {}", userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -31,6 +34,7 @@ public class PostService {
     }
 
     public List<Post> getPostsByUser(int userId) {
+        accessControl.allowSameUserOrAdmin(userId);
         log.info("Fetching posts for userId: {}", userId);
         return postRepository.findByUserId(userId);
     }

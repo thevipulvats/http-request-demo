@@ -7,12 +7,9 @@ import com.engineeringdigest.http_request_demo.exception.ResourceNotFoundExcepti
 import com.engineeringdigest.http_request_demo.mapper.UserMapper;
 import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
+import com.engineeringdigest.http_request_demo.security.AccessControl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +26,10 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final AccessControl accessControl;
+
     public List<User> getAllUsers() {
+        accessControl.allowOnlyAdmin();
         log.info("Fetching all users");
         List<User> users = userRepository.findAll();
         log.info("Total users found: {}", users.size());
@@ -37,12 +37,7 @@ public class UserService {
     }
 
     public User getUserById(int userId){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User loggedInUser = (User) authentication.getPrincipal();
-        if (loggedInUser.getId() != userId && !loggedInUser.getRole().equals("ADMIN")) {
-            log.warn("User {} tried to access data of user {}", loggedInUser.getId(), userId);
-            throw new AccessDeniedException("You can only access your own data");
-        }
+        accessControl.allowSameUserOrAdmin(userId);
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             log.warn("User not found with id: {}", userId);
@@ -64,6 +59,7 @@ public class UserService {
     }
 
     public User replaceUser(int id, UserRequest userRequest) {
+        accessControl.allowSameUserOrAdmin(id);
         log.info("Replacing user with id: {}", id);
         User user = userMapper.toUser(userRequest);
         user.setId(id);
@@ -71,6 +67,7 @@ public class UserService {
     }
 
     public User updateUser(int id, UserPatchRequest userRequest) {
+        accessControl.allowSameUserOrAdmin(id);
         log.info("Updating user with id: {}", id);
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
@@ -85,11 +82,13 @@ public class UserService {
     }
 
     public void deleteUser(int id) {
+        accessControl.allowOnlyAdmin();
         log.info("Deleting user with id: {}", id);
         userRepository.deleteById(id);
     }
 
     public List<User> searchUsers(String name) {
+        accessControl.allowOnlyAdmin();
         log.info("Searching users with name containing: {}", name);
         return userRepository.findByNameContainingIgnoreCase(name);
     }
