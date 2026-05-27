@@ -9,9 +9,13 @@ import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -23,20 +27,36 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    private final StringRedisTemplate redisTemplate;
+
+    private final ObjectMapper objectMapper;
+
     public List<User> getAllUsers() {
+        String cacheKey = "user:all";
+        String dataFromRedis = redisTemplate.opsForValue().get(cacheKey);
+        if(dataFromRedis != null){
+            return objectMapper.readValue(dataFromRedis, new TypeReference<List<User>>() {});
+        }
         log.info("Fetching all users");
         List<User> users = userRepository.findAll();
+        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(users), Duration.ofMinutes(10));
         log.info("Total users found: {}", users.size());
         return users;
     }
 
-    public User getUserById(int userId){
+    public User getUserById(int userId) {
+        String cacheKey = "user:" + userId;
+        String dataFomRedis = redisTemplate.opsForValue().get(cacheKey);
+        if(dataFomRedis != null){
+            return objectMapper.readValue(dataFomRedis, User.class);
+        }
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             log.warn("User not found with id: {}", userId);
             throw new ResourceNotFoundException(
                     "User with id " + userId + " not found");
         }
+        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(user), Duration.ofMinutes(10));
         log.info("User found: {}", user.getName());
         return user;
     }

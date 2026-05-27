@@ -18,7 +18,7 @@ public class Post {
     private int id;
     private String title;
     private String content;
-    private LocalDateTime createdAt =  LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

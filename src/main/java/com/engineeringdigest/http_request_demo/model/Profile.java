@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Data
 @Entity
 @Table(name = "profiles")
 public class Profile {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;

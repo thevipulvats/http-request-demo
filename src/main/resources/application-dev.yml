@@ -10,6 +10,10 @@ spring:
     username: root
     url: jdbc:mysql://localhost:3306/bootcamp
     password: ''
+  data:
+    redis:
+      host: localhost
+      port: 6379
   application:
     name: http-request-demo
   jpa:
