@@ -1,5 +1,6 @@
 package com.engineeringdigest.http_request_demo.controller;
 
+import com.engineeringdigest.http_request_demo.dto.UserListResponse;
 import com.engineeringdigest.http_request_demo.dto.UserPatchRequest;
 import com.engineeringdigest.http_request_demo.dto.UserRequest;
 import com.engineeringdigest.http_request_demo.dto.UserResponse;
@@ -38,13 +39,13 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Get all users", description = "Returns a list of all users in the system")
-    public List<User> getUsers() {
+    public UserListResponse getUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID", description = "Returns a single user for the given ID. Throws 404 if not found.")
-    public ResponseEntity<User> getUser(@PathVariable(name = "id") int userId) {
+    public ResponseEntity<UserResponse> getUser(@PathVariable(name = "id") int userId) {
         return ResponseEntity.ok()
                 .header("something", "good")
                 .body(userService.getUserById(userId));
@@ -58,13 +59,13 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "Replace a user", description = "Completely replaces user data for the given ID")
-    public User replaceUser(@RequestParam int id, @RequestBody @Valid UserRequest userRequest) {
+    public UserResponse replaceUser(@RequestParam int id, @RequestBody @Valid UserRequest userRequest) {
         return userService.replaceUser(id, userRequest);
     }
 
     @PatchMapping
     @Operation(summary = "Partially update a user", description = "Updates only the provided fields for the given user ID")
-    public User updateUser(@RequestParam int id, @RequestBody @Valid UserPatchRequest userRequest) {
+    public UserResponse updateUser(@RequestParam int id, @RequestBody @Valid UserPatchRequest userRequest) {
         return userService.updateUser(id, userRequest);
     }
 

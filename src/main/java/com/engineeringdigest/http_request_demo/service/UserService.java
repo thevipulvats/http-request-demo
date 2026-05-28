@@ -1,5 +1,6 @@
 package com.engineeringdigest.http_request_demo.service;
 
+import com.engineeringdigest.http_request_demo.dto.UserListResponse;
 import com.engineeringdigest.http_request_demo.dto.UserPatchRequest;
 import com.engineeringdigest.http_request_demo.dto.UserRequest;
 import com.engineeringdigest.http_request_demo.dto.UserResponse;
@@ -9,6 +10,9 @@ import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -27,38 +31,27 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final StringRedisTemplate redisTemplate;
 
-    private final ObjectMapper objectMapper;
-
-    public List<User> getAllUsers() {
-        String cacheKey = "user:all";
-        String dataFromRedis = redisTemplate.opsForValue().get(cacheKey);
-        if(dataFromRedis != null){
-            return objectMapper.readValue(dataFromRedis, new TypeReference<List<User>>() {});
-        }
+    @Cacheable(value = "users", key = "'all'")
+    public UserListResponse getAllUsers() {
         log.info("Fetching all users");
-        List<User> users = userRepository.findAll();
-        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(users), Duration.ofMinutes(10));
-        log.info("Total users found: {}", users.size());
-        return users;
+        List<UserResponse> users = userRepository.findAll().stream()
+                .map(userMapper::toUserResponse)
+                .toList();
+        return new UserListResponse(users);
     }
 
-    public User getUserById(int userId) {
-        String cacheKey = "user:" + userId;
-        String dataFomRedis = redisTemplate.opsForValue().get(cacheKey);
-        if(dataFomRedis != null){
-            return objectMapper.readValue(dataFomRedis, User.class);
-        }
+    // user::8
+    @Cacheable(value = "user", key = "#userId")
+    public UserResponse getUserById(int userId) {
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             log.warn("User not found with id: {}", userId);
             throw new ResourceNotFoundException(
                     "User with id " + userId + " not found");
         }
-        redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(user), Duration.ofMinutes(10));
         log.info("User found: {}", user.getName());
-        return user;
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse createUser(UserRequest userRequest) {
@@ -69,14 +62,17 @@ public class UserService {
         return response;
     }
 
-    public User replaceUser(int id, UserRequest userRequest) {
+
+    @CachePut(value = "user", key = "#id")
+    public UserResponse replaceUser(int id, UserRequest userRequest) {
         log.info("Replacing user with id: {}", id);
         User user = userMapper.toUser(userRequest);
         user.setId(id);
-        return userRepository.save(user);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    public User updateUser(int id, UserPatchRequest userRequest) {
+    @CachePut(value = "user", key = "#id")
+    public UserResponse updateUser(int id, UserPatchRequest userRequest) {
         log.info("Updating user with id: {}", id);
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
@@ -87,9 +83,10 @@ public class UserService {
         if (newUser.getName() != null && !newUser.getName().isBlank()) {
             existingUser.setName(newUser.getName());
         }
-        return userRepository.save(existingUser);
+        return userMapper.toUserResponse(userRepository.save(existingUser));
     }
 
+    @CacheEvict(value = "user", key = "#id")
     public void deleteUser(int id) {
         log.info("Deleting user with id: {}", id);
         userRepository.deleteById(id);
