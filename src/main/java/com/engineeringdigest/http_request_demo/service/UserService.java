@@ -10,6 +10,7 @@ import com.engineeringdigest.http_request_demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +23,8 @@ public class UserService {
     private final UserMapper userMapper;
 
     private final UserRepository userRepository;
+
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     public List<User> getAllUsers() {
         log.info("Fetching all users");
@@ -46,6 +49,19 @@ public class UserService {
         User user = userMapper.toUser(userRequest);
         UserResponse response = userMapper.toUserResponse(userRepository.save(user));
         log.info("User created successfully with id: {}", response.getId());
+
+        String key = String.valueOf(response.getId());
+        String event = "USER CREATED | id=" + response.getId() + " | name=" + response.getName();
+        kafkaTemplate.send("user-events", key, event)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        log.info("Event published to partition {} at offset {}",
+                                result.getRecordMetadata().partition(),
+                                result.getRecordMetadata().offset());
+                    } else {
+                        log.error("Failed to publish event for user id {}", response.getId(), ex);
+                    }
+                });
         return response;
     }
 
@@ -67,7 +83,21 @@ public class UserService {
         if (newUser.getName() != null && !newUser.getName().isBlank()) {
             existingUser.setName(newUser.getName());
         }
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+
+        String key = String.valueOf(savedUser.getId());
+        String event = "USER UPDATED | id=" + savedUser.getId() + " | name=" + savedUser.getName();
+        kafkaTemplate.send("user-events", key, event)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        log.info("Event published to partition {} at offset {}",
+                                result.getRecordMetadata().partition(),
+                                result.getRecordMetadata().offset());
+                    } else {
+                        log.error("Failed to publish event for user id {}", savedUser.getId(), ex);
+                    }
+                });
+        return savedUser;
     }
 
     public void deleteUser(int id) {
