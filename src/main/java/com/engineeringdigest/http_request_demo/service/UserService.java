@@ -1,5 +1,6 @@
 package com.engineeringdigest.http_request_demo.service;
 
+import com.engineeringdigest.http_request_demo.configuration.RabbitMQConfig;
 import com.engineeringdigest.http_request_demo.dto.UserPatchRequest;
 import com.engineeringdigest.http_request_demo.dto.UserRequest;
 import com.engineeringdigest.http_request_demo.dto.UserResponse;
@@ -9,6 +10,7 @@ import com.engineeringdigest.http_request_demo.model.User;
 import com.engineeringdigest.http_request_demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ public class UserService {
     private final UserMapper userMapper;
 
     private final UserRepository userRepository;
+
+    private final RabbitTemplate rabbitTemplate;
 
     public List<User> getAllUsers() {
         log.info("Fetching all users");
@@ -46,6 +50,11 @@ public class UserService {
         User user = userMapper.toUser(userRequest);
         UserResponse response = userMapper.toUserResponse(userRepository.save(user));
         log.info("User created successfully with id: {}", response.getId());
+
+        String event = "USER_CREATED | id=" + response.getId() + " | name=" + response.getName();
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, "user.created", event);
+        log.info("Published 'user.created' event to exchange '{}'", RabbitMQConfig.EXCHANGE);
+
         return response;
     }
 
@@ -73,6 +82,8 @@ public class UserService {
     public void deleteUser(int id) {
         log.info("Deleting user with id: {}", id);
         userRepository.deleteById(id);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, "user.deleted", "USER_DELETED | id=" + id);
+        log.info("Published 'user.deleted' event");
     }
 
     public List<User> searchUsers(String name) {
