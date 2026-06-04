@@ -5,6 +5,8 @@ springdoc:
     path: /api-docs-ui
 
 spring:
+  elasticsearch:
+    uris: http://localhost:9200
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
