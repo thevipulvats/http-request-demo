@@ -1,18 +1,15 @@
-pipeline{
-    agent any{
+pipeline {
+    agent any
 
-    tools{
+    tools {
         maven 'maven-3'
-      }
+    }
 
-    stages{
-        stage('Build & Test'){
-            steps{
+    stages {
+        stage('Build & Test') {
+            steps {
                 sh 'mvn clean package'
             }
         }
-
-    }
-
     }
 }
