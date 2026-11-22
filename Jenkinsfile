@@ -8,6 +8,9 @@ pipeline {
         environment {
             EC2_HOST = '43.205.210.126'
         }
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
 
     stages {
         stage('Build & Test') {
